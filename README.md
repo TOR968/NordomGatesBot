@@ -76,4 +76,4 @@ This bot is for educational purposes only. Use it at your own risk and make sure
 
 ## License
 
-This project is open source and available under the [GNU License](LICENSE).
+This project is open source and available under the [GPL License](LICENSE).
