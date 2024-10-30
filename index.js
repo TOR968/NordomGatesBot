@@ -7,7 +7,7 @@ const randomDelay = () => Math.random() * 3000 + 1000;
 
 ///////////////////////////////////////// Config  //////////////////////////////////////////////////
 const config = {
-    attempts: 2, // Number of attempts per cycle (1-10)
+    attempts: 2, // Number of times the door is opened per cycle (1-10)
     baseUrl: "https://nordgatetest-gfe0dubkf7cgc7f4.westeurope-01.azurewebsites.net/api/v1",
     dataFile: "data.txt",
     proxyFile: "proxy.txt",
@@ -227,7 +227,7 @@ async function playGameSession(axiosInstance) {
             } else {
                 totalLosses++;
                 winCount = 0;
-                console.log(`${colors.red}Lost! Starting new cycle...${colors.reset}`);
+                console.log(`${colors.green}Lost! Starting new cycle...${colors.reset}`);
                 cycleActive = false;
             }
 
