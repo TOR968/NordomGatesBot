@@ -50,7 +50,7 @@
 
 To obtain your account tgWabAppData:
 
-1. Log in to the PitchTalk app in Telegram or Telegram Web.
+1. Log in to the app in Telegram or Telegram Web.
 2. Open your browser's Developer Tools (usually F12 or right-click and select "Inspect").
 3. Go to the "Application" tab in the Developer Tools.
 4. Copy tgWabAppData highlighted in red.
