@@ -7,7 +7,7 @@ const randomDelay = () => Math.random() * 3000 + 1000;
 
 ///////////////////////////////////////// Config  //////////////////////////////////////////////////
 const config = {
-    attempts: 2, // Number of times the door is opened per cycle (1-10)
+    attempts: 3, // Number of times the door is opened per cycle (1-10)
     baseUrl: "https://nordgatetest-gfe0dubkf7cgc7f4.westeurope-01.azurewebsites.net/api/v1",
     dataFile: "data.txt",
     proxyFile: "proxy.txt",
@@ -94,13 +94,13 @@ async function getTasks(axiosInstance) {
     return await makeRequest(axiosInstance, "/tasks");
 }
 
-async function startTask(axiosInstance, taskId) {
-    console.log(`${colors.yellow}Starting task ${taskId}...${colors.reset}`);
+async function startTask(axiosInstance, taskId, name) {
+    console.log(`${colors.yellow}Starting task ${name}...${colors.reset}`);
     return await makeRequest(axiosInstance, `/tasks/start/${taskId}`, "POST");
 }
 
-async function claimTask(axiosInstance, taskId) {
-    console.log(`${colors.green}Claiming task ${taskId}...${colors.reset}`);
+async function claimTask(axiosInstance, taskId, name) {
+    console.log(`${colors.green}Claiming task ${name}...${colors.reset}`);
     return await makeRequest(axiosInstance, `/tasks/claim/${taskId}`, "POST");
 }
 
@@ -135,27 +135,57 @@ async function processKnockGame(axiosInstance) {
 }
 
 async function processTasks(axiosInstance) {
-    const tasks = await getTasks(axiosInstance);
-    if (!tasks || !tasks.data) return false;
-
     let taskProcessed = false;
-    for (const task of tasks.data.nordom) {
-        try {
-            if (task.status === "notStarted") {
-                await startTask(axiosInstance, task.id);
-                taskProcessed = true;
-            } else if (task.status === "completed") {
-                await claimTask(axiosInstance, task.id);
-                taskProcessed = true;
-            }
-        } catch (error) {
-            console.log(`${colors.red}Error processing task ${task.id}: ${error.message}${colors.reset}`);
+
+    while (true) {
+        const tasks = await getTasks(axiosInstance);
+        if (!tasks || !tasks.data) {
+            console.log(`${colors.red}No tasks data found.${colors.reset}`);
+            return false;
         }
+
+        let tasksToProcess = [
+            ...tasks.data.social.news,
+            ...tasks.data.social.recurring,
+            ...tasks.data.social.standard,
+            ...tasks.data.activity.news,
+            ...tasks.data.activity.recurring,
+            ...tasks.data.activity.standard,
+            ...tasks.data.partner.news,
+        ];
+
+        console.log(`${colors.yellow}Tasks to process: ${tasksToProcess.length}${colors.reset}`);
+
+        let currentTaskProcessed = false;
+
+        for (const task of tasksToProcess) {
+            try {
+                if (task.status === "notStarted") {
+                    await startTask(axiosInstance, task.id, task.name);
+                    currentTaskProcessed = true;
+                } else if (task.status === "inProgress" && task.currentLevel >= task.maxLevel) {
+                    await claimTask(axiosInstance, task.id, task.name);
+                    currentTaskProcessed = true;
+                } else if (task.status === "completed") {
+                    await claimTask(axiosInstance, task.id, task.name);
+                    currentTaskProcessed = true;
+                }
+            } catch (error) {
+                console.log(`${colors.red}Error processing task ${task.id}: ${error.message}${colors.reset}`);
+            }
+        }
+
+        if (!currentTaskProcessed) {
+            console.log(`${colors.green}All tasks have been completed or no further tasks available!${colors.reset}`);
+            break;
+        }
+
+        taskProcessed = taskProcessed || currentTaskProcessed;
+        await sleep(config.delay);
     }
+
     return taskProcessed;
 }
-
-let winCount = 0;
 
 async function playGameSession(axiosInstance) {
     const doors = ["first", "second", "third"];
@@ -171,7 +201,7 @@ async function playGameSession(axiosInstance) {
         userName = dashboard.data.userName;
 
         if (dashboard.data.knockGame.isAvailable) {
-            processKnockGame(axiosInstance);
+            await processKnockGame(axiosInstance);
             continue;
         }
 
@@ -187,7 +217,7 @@ async function playGameSession(axiosInstance) {
             console.log(`${colors.yellow}No keys available. Processing tasks...${colors.reset}`);
             const tasksProcessed = await processTasks(axiosInstance);
             if (!tasksProcessed) {
-                console.log(`${colors.red}No more tasks available. Session ended.${colors.reset}`);
+                console.log(`${colors.yellow}No more tasks available. Session ended.${colors.reset}`);
                 break;
             }
             continue;
