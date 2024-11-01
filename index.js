@@ -29,7 +29,10 @@ const colors = {
 function loadData() {
     try {
         const data = readFileSync(config.dataFile, "utf8");
-        return data.split("\n").filter((line) => line.trim());
+        return data
+            .split("\n")
+            .map((line) => line.trim())
+            .filter((line) => line);
     } catch (error) {
         console.log(`${colors.red}Error loading data file: ${error}${colors.reset}`);
         return [];
@@ -54,7 +57,7 @@ function createAxiosInstance(telegramData, proxyUrl = null) {
         headers: {
             "X-Telegram-Init-Data": telegramData,
             "User-Agent":
-                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
         },
     };
 
@@ -82,6 +85,16 @@ async function makeRequest(axiosInstance, url, method = "GET", data = null) {
         }
         return null;
     }
+}
+
+async function checkin(axiosInstance) {
+    console.log(`${colors.blue}Checking in...${colors.reset}`);
+    return await makeRequest(axiosInstance, "/users/checkin", "POST");
+}
+
+async function claimStreak(axiosInstance) {
+    console.log(`${colors.blue}Claiming streak...${colors.reset}`);
+    return await makeRequest(axiosInstance, "/streak/claim", "POST");
 }
 
 async function getDashboard(axiosInstance) {
@@ -187,6 +200,8 @@ async function processTasks(axiosInstance) {
     return taskProcessed;
 }
 
+let winCount = 0;
+
 async function playGameSession(axiosInstance) {
     const doors = ["first", "second", "third"];
     let userName = "";
@@ -195,6 +210,12 @@ async function playGameSession(axiosInstance) {
     let totalLosses = 0;
 
     while (sessionActive) {
+        const checkinResult = await checkin(axiosInstance);
+        if (checkinResult.data.firstLoginOfDay) {
+            await claimStreak(axiosInstance);
+            console.log(`${colors.green}Streak day ${checkinResult.data.dayStreak.dayStreak}!${colors.reset}`);
+        }
+
         const dashboard = await getDashboard(axiosInstance);
         if (!dashboard || !dashboard.data) return;
 
