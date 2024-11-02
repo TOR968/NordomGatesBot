@@ -210,10 +210,12 @@ async function playGameSession(axiosInstance) {
     let totalLosses = 0;
 
     while (sessionActive) {
-        const checkinResult = await checkin(axiosInstance);
-        if (checkinResult.data.firstLoginOfDay) {
-            await claimStreak(axiosInstance);
-            console.log(`${colors.green}Streak day ${checkinResult.data.dayStreak.dayStreak}!${colors.reset}`);
+        if (totalWins === 0 && totalLosses === 0) {
+            const checkinResult = await checkin(axiosInstance);
+            if (checkinResult.data.firstLoginOfDay) {
+                await claimStreak(axiosInstance);
+                console.log(`${colors.green}Streak day ${checkinResult.data.dayStreak.dayStreak}!${colors.reset}`);
+            }
         }
 
         const dashboard = await getDashboard(axiosInstance);
