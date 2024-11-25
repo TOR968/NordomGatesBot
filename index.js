@@ -172,6 +172,11 @@ async function processTasks(axiosInstance) {
         let currentTaskProcessed = false;
 
         for (const task of tasksToProcess) {
+            if (task.type === "keyword") {
+                console.log(`${colors.yellow}Skipping keyword task: ${task.name}${colors.reset}`);
+                continue;
+            }
+
             try {
                 if (task.status === "notStarted") {
                     await startTask(axiosInstance, task.id, task.name);
