@@ -2,12 +2,13 @@ import scheduleNextRun from "./schedule.js";
 import { readFileSync } from "fs";
 import axios from "axios";
 import { HttpsProxyAgent } from "https-proxy-agent";
+import keywords from "./keyword.json" assert { type: 'json' };
 
 const randomDelay = () => Math.random() * 3000 + 1000;
 
 ///////////////////////////////////////// Config  //////////////////////////////////////////////////
 const config = {
-    attempts: 3, // Number of times the door is opened per cycle (1-10)
+    attempts: 5, // Number of times the door is opened per cycle (1-10)
     baseUrl: "https://nordgatetest-gfe0dubkf7cgc7f4.westeurope-01.azurewebsites.net/api/v1",
     dataFile: "data.txt",
     proxyFile: "proxy.txt",
@@ -112,9 +113,9 @@ async function startTask(axiosInstance, taskId, name) {
     return await makeRequest(axiosInstance, `/tasks/start/${taskId}`, "POST");
 }
 
-async function claimTask(axiosInstance, taskId, name) {
+async function claimTask(axiosInstance, taskId, name, payload = null) {
     console.log(`${colors.green}Claiming task ${name}...${colors.reset}`);
-    return await makeRequest(axiosInstance, `/tasks/claim/${taskId}`, "POST");
+    return await makeRequest(axiosInstance, `/tasks/claim/${taskId}`, "POST", payload);
 }
 
 async function selectDoor(axiosInstance, door) {
@@ -172,7 +173,7 @@ async function processTasks(axiosInstance) {
         let currentTaskProcessed = false;
 
         for (const task of tasksToProcess) {
-            if (task.type === "keyword") {
+            if (task.type === "keyword" && !availableKey(task.id)) {
                 console.log(`${colors.yellow}Skipping keyword task: ${task.name}${colors.reset}`);
                 continue;
             }
@@ -182,10 +183,10 @@ async function processTasks(axiosInstance) {
                     await startTask(axiosInstance, task.id, task.name);
                     currentTaskProcessed = true;
                 } else if (task.status === "inProgress" && task.currentLevel >= task.maxLevel) {
-                    await claimTask(axiosInstance, task.id, task.name);
+                    await claimTask(axiosInstance, task.id, task.name, setupPayload(task));
                     currentTaskProcessed = true;
                 } else if (task.status === "completed") {
-                    await claimTask(axiosInstance, task.id, task.name);
+                    await claimTask(axiosInstance, task.id, task.name, setupPayload(task));
                     currentTaskProcessed = true;
                 }
             } catch (error) {
@@ -203,6 +204,21 @@ async function processTasks(axiosInstance) {
     }
 
     return taskProcessed;
+}
+
+function availableKey(taskId) {
+    return Object.keys(keywords).includes(taskId);
+}
+
+function setupPayload(task) {
+    if (task.type === "keyword") {
+        return {
+            taskId: task.id,
+            keyword: keywords[task.id],
+        };
+    } else {
+        return null;
+    }
 }
 
 let winCount = 0;
