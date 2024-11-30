@@ -2,7 +2,7 @@ import scheduleNextRun from "./schedule.js";
 import { readFileSync } from "fs";
 import axios from "axios";
 import { HttpsProxyAgent } from "https-proxy-agent";
-import keywords from "./keyword.json" assert { type: 'json' };
+const keywords = JSON.parse(readFileSync("./keyword.json", "utf-8"));
 
 const randomDelay = () => Math.random() * 3000 + 1000;
 
