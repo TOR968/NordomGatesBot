@@ -155,6 +155,7 @@ async function processKnockGame(axiosInstance) {
 
 async function processTasks(axiosInstance) {
     let taskProcessed = false;
+    const erroredTasks = new Set();
 
     while (true) {
         const tasks = await getTasks(axiosInstance);
@@ -171,7 +172,7 @@ async function processTasks(axiosInstance) {
             ...tasks.data.activity.recurring,
             ...tasks.data.activity.standard,
             ...tasks.data.partner.news,
-        ];
+        ].filter(task => !erroredTasks.has(task.id));
 
         console.log(`${colors.yellow}Tasks to process: ${tasksToProcess.length}${colors.reset}`);
 
@@ -196,6 +197,7 @@ async function processTasks(axiosInstance) {
                 }
             } catch (error) {
                 console.log(`${colors.red}Error processing task ${task.id}: ${error.message}${colors.reset}`);
+                erroredTasks.add(task.id);
             }
         }
 
