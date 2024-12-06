@@ -2,6 +2,7 @@ import scheduleNextRun from "./schedule.js";
 import { readFileSync } from "fs";
 import axios from "axios";
 import { HttpsProxyAgent } from "https-proxy-agent";
+import { SocksProxyAgent } from "socks-proxy-agent";
 const keywords = JSON.parse(readFileSync("./keyword.json", "utf-8"));
 
 const randomDelay = () => Math.random() * 3000 + 1000;
@@ -63,7 +64,11 @@ function createAxiosInstance(telegramData, proxyUrl = null) {
     };
 
     if (proxyUrl) {
-        axiosConfig.httpsAgent = new HttpsProxyAgent(proxyUrl);
+        if (proxyUrl.startsWith('socks4://') || proxyUrl.startsWith('socks5://')) {
+            axiosConfig.httpsAgent = new SocksProxyAgent(proxyUrl);
+        } else {
+            axiosConfig.httpsAgent = new HttpsProxyAgent(proxyUrl);
+        }
     }
 
     return axios.create(axiosConfig);
