@@ -10,7 +10,7 @@ const randomDelay = () => Math.random() * 3000 + 1000;
 ///////////////////////////////////////// Config  //////////////////////////////////////////////////
 const config = {
     attempts: 5, // Number of times the door is opened per cycle (1-10)
-    baseUrl: "https://nordgatetest-gfe0dubkf7cgc7f4.westeurope-01.azurewebsites.net/api/v1",
+    baseUrl: "https://nordomgate-back-gua0c3cgh0aneacq.z02.azurefd.net/api/v1",
     dataFile: "data.txt",
     proxyFile: "proxy.txt",
     delay: randomDelay(),
@@ -64,7 +64,7 @@ function createAxiosInstance(telegramData, proxyUrl = null) {
     };
 
     if (proxyUrl) {
-        if (proxyUrl.startsWith('socks4://') || proxyUrl.startsWith('socks5://')) {
+        if (proxyUrl.startsWith("socks4://") || proxyUrl.startsWith("socks5://")) {
             axiosConfig.httpsAgent = new SocksProxyAgent(proxyUrl);
         } else {
             axiosConfig.httpsAgent = new HttpsProxyAgent(proxyUrl);
@@ -116,6 +116,11 @@ async function getTasks(axiosInstance) {
 async function startTask(axiosInstance, taskId, name) {
     console.log(`${colors.yellow}Starting task ${name}...${colors.reset}`);
     return await makeRequest(axiosInstance, `/tasks/start/${taskId}`, "POST");
+}
+
+async function verifyTask(axiosInstance, name, payload = null) {
+    console.log(`${colors.green}Verifying task ${name}...${colors.reset}`);
+    return await makeRequest(axiosInstance, `tasks/verify`, "POST", payload);
 }
 
 async function claimTask(axiosInstance, taskId, name, payload = null) {
@@ -172,7 +177,7 @@ async function processTasks(axiosInstance) {
             ...tasks.data.activity.recurring,
             ...tasks.data.activity.standard,
             ...tasks.data.partner.news,
-        ].filter(task => !erroredTasks.has(task.id));
+        ].filter((task) => !erroredTasks.has(task.id));
 
         console.log(`${colors.yellow}Tasks to process: ${tasksToProcess.length}${colors.reset}`);
 
@@ -188,8 +193,12 @@ async function processTasks(axiosInstance) {
                 if (task.status === "notStarted") {
                     await startTask(axiosInstance, task.id, task.name);
                     currentTaskProcessed = true;
-                } else if (task.status === "inProgress" && task.currentLevel >= task.maxLevel) {
-                    await claimTask(axiosInstance, task.id, task.name, setupPayload(task));
+                } else if (
+                    task.type === "keyword" &&
+                    task.status === "inProgress" &&
+                    task.currentLevel >= task.maxLevel
+                ) {
+                    await verifyTask(axiosInstance, task.name, setupPayload(task));
                     currentTaskProcessed = true;
                 } else if (task.status === "completed") {
                     await claimTask(axiosInstance, task.id, task.name, setupPayload(task));
@@ -202,7 +211,7 @@ async function processTasks(axiosInstance) {
         }
 
         if (!currentTaskProcessed) {
-            console.log(`${colors.green}All tasks have been completed or no further tasks available!${colors.reset}`);
+            console.log(`${colors.green}All tasks have been processed or no further tasks available!${colors.reset}`);
             break;
         }
 
