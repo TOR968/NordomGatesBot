@@ -325,6 +325,7 @@ async function playGameSession(axiosInstance) {
             if (result.data.result === "win") {
                 totalWins++;
                 winCount++;
+                keys = result.data.currentStateDto.key;
                 console.log(`${colors.green}Won! Level: ${result.data.currentStateDto.currentLevel}${colors.reset}`);
                 console.log(`${colors.green}Points: ${result.data.currentStateDto.accumulatedPoint}${colors.reset}`);
 
@@ -341,11 +342,10 @@ async function playGameSession(axiosInstance) {
             } else {
                 totalLosses++;
                 winCount = 0;
+                keys = result.data.currentStateDto.key;
                 console.log(`${colors.green}Lost! Starting new cycle...${colors.reset}`);
                 cycleActive = false;
             }
-
-            keys--;
         }
 
         if (keys === 0) {
