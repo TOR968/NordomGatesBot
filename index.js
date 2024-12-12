@@ -13,6 +13,7 @@ const config = {
     rewardInKeys: true, // false - get points, true - get keys in KnockGame
     minPoints: 159, // Minimum number of points to win in KnockGame (1-398)
     maxPoints: 400, // Maximum number of points to win in KnockGame (1-400)
+    processTasksEnabled: true, //Option to enable - true /disable - false task processing
     baseUrl: "https://nordomgate-back-gua0c3cgh0aneacq.z02.azurefd.net/api/v1",
     dataFile: "data.txt",
     proxyFile: "proxy.txt",
@@ -292,10 +293,15 @@ async function playGameSession(axiosInstance) {
         console.log(`${colors.cyan}Available keys: ${keys}${colors.reset}`);
 
         if (keys === 0) {
-            console.log(`${colors.yellow}No keys available. Processing tasks...${colors.reset}`);
-            const tasksProcessed = await processTasks(axiosInstance);
-            if (!tasksProcessed) {
-                console.log(`${colors.yellow}No more tasks available. Session ended.${colors.reset}`);
+            if (config.processTasksEnabled) {
+                console.log(`${colors.yellow}No keys available. Processing tasks...${colors.reset}`);
+                const tasksProcessed = await processTasks(axiosInstance);
+                if (!tasksProcessed) {
+                    console.log(`${colors.yellow}No more tasks available. Session ended.${colors.reset}`);
+                    break;
+                }
+            } else {
+                console.log(`${colors.yellow}Task processing is disabled. Skipping task processing.${colors.reset}`);
                 break;
             }
             continue;
@@ -343,9 +349,14 @@ async function playGameSession(axiosInstance) {
         }
 
         if (keys === 0) {
-            const tasksProcessed = await processTasks(axiosInstance);
-            if (!tasksProcessed) {
-                console.log(`${colors.yellow}No more tasks and keys available. Session ended.${colors.reset}`);
+            if (config.processTasksEnabled) {
+                const tasksProcessed = await processTasks(axiosInstance);
+                if (!tasksProcessed) {
+                    console.log(`${colors.yellow}No more tasks and keys available. Session ended.${colors.reset}`);
+                    sessionActive = false;
+                }
+            } else {
+                console.log(`${colors.yellow}Task processing is disabled. Session ended.${colors.reset}`);
                 sessionActive = false;
             }
         }
