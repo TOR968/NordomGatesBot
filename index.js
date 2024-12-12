@@ -331,6 +331,7 @@ async function playGameSession(axiosInstance) {
 
                 if (winCount >= config.attempts) {
                     await claimPoints(axiosInstance);
+                    cycleActive = false;
                     winCount = 0;
                 } else if (result.data.currentStateDto.currentLevel < result.data.currentStateDto.maxLevel) {
                     await riskPoints(axiosInstance);
