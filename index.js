@@ -10,6 +10,9 @@ const randomDelay = () => Math.random() * 3000 + 1000;
 ///////////////////////////////////////// Config  //////////////////////////////////////////////////
 const config = {
     attempts: 5, // Number of times the door is opened per cycle (1-10)
+    rewardInKeys: true, // false - get points, true - get keys in KnockGame
+    minPoints: 159, // Minimum number of points to win in KnockGame (1-398)
+    maxPoints: 400, // Maximum number of points to win in KnockGame (1-400)
     baseUrl: "https://nordomgate-back-gua0c3cgh0aneacq.z02.azurefd.net/api/v1",
     dataFile: "data.txt",
     proxyFile: "proxy.txt",
@@ -150,11 +153,27 @@ async function startKnockGame(axiosInstance) {
 
 async function claimKnockGamePoints(axiosInstance) {
     console.log(`${colors.green}Claiming knock game points...${colors.reset}`);
-    return await makeRequest(axiosInstance, "/knockgame/claim/0", "PUT");
+    return await makeRequest(
+        axiosInstance,
+        `/knockgame/claim/${randomPoints()}?rewardInKeys=${config.rewardInKeys}`,
+        "PUT"
+    );
+}
+
+function randomPoints() {
+    const points = Math.floor(Math.random() * (config.maxPoints - config.minPoints + 1)) + config.minPoints;
+    console.log(
+        `${colors.green}Knock game points: ${points} | ${config.rewardInKeys ? "get Keys" : "get Points"} ${
+            colors.reset
+        }`
+    );
+    return points;
 }
 
 async function processKnockGame(axiosInstance) {
     await startKnockGame(axiosInstance);
+    console.log(`${colors.yellow}Waiting 10 seconds...${colors.reset}`);
+    await sleep(10 * 1000);
     await claimKnockGamePoints(axiosInstance);
 }
 
