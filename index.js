@@ -3,6 +3,9 @@ import { readFileSync } from "fs";
 import axios from "axios";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { SocksProxyAgent } from "socks-proxy-agent";
+import UserAgentManager from "./userAgentManager.js";
+
+const userAgentManager = new UserAgentManager();
 const keywords = JSON.parse(readFileSync("./keyword.json", "utf-8"));
 
 const randomDelay = () => Math.random() * 3000 + 1000;
@@ -57,7 +60,7 @@ function loadProxies() {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function createAxiosInstance(telegramData, proxyUrl = null) {
+function createAxiosInstance(telegramData, proxyUrl = null, userAgent = null) {
     const axiosConfig = {
         baseURL: config.baseUrl,
         headers: {
@@ -66,6 +69,10 @@ function createAxiosInstance(telegramData, proxyUrl = null) {
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
         },
     };
+
+    if (userAgent) {
+        axiosConfig.headers["User-Agent"] = userAgent;
+    }
 
     if (proxyUrl) {
         if (proxyUrl.startsWith("socks4://") || proxyUrl.startsWith("socks5://")) {
@@ -377,7 +384,8 @@ async function main() {
 
     for (let i = 0; i < telegramData.length; i++) {
         const proxyUrl = i < proxies.length ? proxies[i] : null;
-        const axiosInstance = createAxiosInstance(telegramData[i], proxyUrl);
+        const userAgent = userAgentManager.getUserAgent(telegramData[i]);
+        const axiosInstance = createAxiosInstance(telegramData[i], proxyUrl, userAgent);
 
         console.log(`${colors.bright}\nStarting session ${i + 1}/${telegramData.length}${colors.reset}`);
         console.log(`${colors.bright}Using proxy: ${proxyUrl || "none"}${colors.reset}`);
