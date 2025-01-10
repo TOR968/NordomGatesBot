@@ -21,6 +21,7 @@ const config = {
     dataFile: "data.txt",
     proxyFile: "proxy.txt",
     delay: randomDelay(),
+    taskToSkip: ["Boost our Telegram channel", "Join us on Telegram", "Spin the Slot 10 Times"],
 };
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -119,9 +120,9 @@ async function getDashboard(axiosInstance) {
     return await makeRequest(axiosInstance, "/dashboard");
 }
 
-async function getTasks(axiosInstance) {
-    console.log(`${colors.blue}Getting tasks...${colors.reset}`);
-    return await makeRequest(axiosInstance, "/tasks");
+async function getTasks(axiosInstance, source) {
+    console.log(`${colors.blue}Getting ${source} tasks...${colors.reset}`);
+    return await makeRequest(axiosInstance, `/tasks/by-source?taskSource=${source}`);
 }
 
 async function startTask(axiosInstance, taskId, name) {
@@ -190,20 +191,34 @@ async function processTasks(axiosInstance) {
     const erroredTasks = new Set();
 
     while (true) {
-        const tasks = await getTasks(axiosInstance);
-        if (!tasks || !tasks.data) {
+        const tasksNordom = await getTasks(axiosInstance, "nordom");
+        if (!tasksNordom || !tasksNordom.data) {
+            console.log(`${colors.red}No tasks data found.${colors.reset}`);
+            return false;
+        }
+
+        const tasksActivity = await getTasks(axiosInstance, "activity");
+        if (!tasksActivity || !tasksActivity.data) {
+            console.log(`${colors.red}No tasks data found.${colors.reset}`);
+            return false;
+        }
+
+        const tasksPartner = await getTasks(axiosInstance, "partner");
+        if (!tasksPartner || !tasksPartner.data) {
             console.log(`${colors.red}No tasks data found.${colors.reset}`);
             return false;
         }
 
         let tasksToProcess = [
-            ...tasks.data.social.news,
-            ...tasks.data.social.recurring,
-            ...tasks.data.social.standard,
-            ...tasks.data.activity.news,
-            ...tasks.data.activity.recurring,
-            ...tasks.data.activity.standard,
-            ...tasks.data.partner.news,
+            ...tasksNordom.data.news,
+            ...tasksNordom.data.recurring,
+            ...tasksNordom.data.standard,
+            ...tasksActivity.data.news,
+            ...tasksActivity.data.recurring,
+            ...tasksActivity.data.standard,
+            ...tasksPartner.data.news,
+            ...tasksPartner.data.recurring,
+            ...tasksPartner.data.standard,
         ].filter((task) => !erroredTasks.has(task.id));
 
         console.log(`${colors.yellow}Tasks to process: ${tasksToProcess.length}${colors.reset}`);
@@ -211,6 +226,11 @@ async function processTasks(axiosInstance) {
         let currentTaskProcessed = false;
 
         for (const task of tasksToProcess) {
+            if (config.taskToSkip.includes(task.name)) {
+                erroredTasks.add(task.id);
+                continue;
+            }
+
             if (task.type === "keyword" && !availableKey(task.id)) {
                 console.log(`${colors.yellow}Skipping keyword task: ${task.name}${colors.reset}`);
                 continue;
