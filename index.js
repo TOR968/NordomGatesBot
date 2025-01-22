@@ -21,7 +21,12 @@ const config = {
     dataFile: "data.txt",
     proxyFile: "proxy.txt",
     delay: randomDelay(),
-    taskToSkip: ["Boost our Telegram channel", "Join us on Telegram", "Spin the Slot 10 Times"],
+    taskToSkip: [
+        "Boost our Telegram channel",
+        "Join us on Telegram",
+        "Complete tasks in Earn section",
+        "Join Whale TG Channel",
+    ],
 };
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
