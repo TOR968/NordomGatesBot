@@ -4,9 +4,11 @@
 | --- | ------------------------------ |
 | ✅  | Automates tasks (not telegram) |
 | ✅  | Playing games                  |
+| ✅  | Playing Wheel game             |
 | ✅  | Handles multiple accounts      |
 | ✅  | Proxy support                  |
 | ✅  | Automatic task verification    |
+| ✅  | Manually set up tasks for skipping    |
 | ✅  | Random restart timer           |
 
 ## For suggestions or to report a bug, please contact [telegram](https://t.me/tor_dev)
@@ -58,9 +60,7 @@ To obtain your account tgWabAppData:
 ![img](image.png)
 
 5. Copy this tgWabAppData and paste it into your `data.txt` file.
-6. In index.js [config](https://github.com/TOR968/NordomGatesBot/blob/d4b9a625b49b690ec6ec0f083d9d3dc4de5a0bc3/index.js#L10), you can edit the number of open doors per 1 game of the attempts value.
-
-**Important**: Keep your account tgWabAppData secret and never share it publicly. It provides access to your account.
+6. **In the index.js file, you can edit the “config” for yourself.**
 
 ## Usage
 

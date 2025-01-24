@@ -20,13 +20,13 @@ const config = {
     baseUrl: "https://nordomgate-back-gua0c3cgh0aneacq.z02.azurefd.net/api/v1",
     dataFile: "data.txt",
     proxyFile: "proxy.txt",
-    delay: randomDelay(),
     taskToSkip: [
         "Boost our Telegram channel",
         "Join us on Telegram",
         "Complete tasks in Earn section",
         "Join Whale TG Channel",
-    ],
+        "Start farming in BlockBits",
+    ], // List of tasks to skip, tasks that can only be performed manually
 };
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -98,7 +98,7 @@ async function makeRequest(axiosInstance, url, method = "GET", data = null) {
             url,
             data,
         });
-        await sleep(config.delay);
+        await sleep(randomDelay());
         return response.data;
     } catch (error) {
         console.log(`${colors.red}Request error: ${error.message}${colors.reset}`);
@@ -163,6 +163,26 @@ async function claimPoints(axiosInstance) {
 async function startKnockGame(axiosInstance) {
     console.log(`${colors.green}Starting knock game...${colors.reset}`);
     return await makeRequest(axiosInstance, "/knockgame/start", "POST");
+}
+
+async function infoWheelGame(axiosInstance) {
+    console.log(`${colors.green}Getting info for wheel game...${colors.reset}`);
+    return await makeRequest(axiosInstance, "/wheel", "GET");
+}
+
+async function claimFreeSpinWheelGame(axiosInstance) {
+    console.log(`${colors.green}Claiming wheel game spin...${colors.reset}`);
+    return await makeRequest(axiosInstance, "/wheel/claim-spin", "POST");
+}
+
+async function spinWheelGame(axiosInstance) {
+    console.log(`${colors.green}Spinning wheel game...${colors.reset}`);
+    return await makeRequest(axiosInstance, "/wheel/spin", "POST");
+}
+
+async function claimRewardWheelGame(axiosInstance) {
+    console.log(`${colors.green}Claiming wheel game reward...${colors.reset}`);
+    return await makeRequest(axiosInstance, "/wheel/claim-reward", "POST");
 }
 
 async function claimKnockGamePoints(axiosInstance) {
@@ -268,7 +288,7 @@ async function processTasks(axiosInstance) {
         }
 
         taskProcessed = taskProcessed || currentTaskProcessed;
-        await sleep(config.delay);
+        await sleep(randomDelay());
     }
 
     return taskProcessed;
@@ -289,6 +309,42 @@ function setupPayload(task) {
     }
 }
 
+async function processWheelGame(axiosInstance, checkinResult) {
+    if (checkinResult.data.firstLoginOfDay) {
+        try {
+            await claimFreeSpinWheelGame(axiosInstance);
+            console.log(`${colors.green}Wheel game free spin claimed!${colors.reset}`);
+        } catch (error) {
+            console.log(`${colors.red}Error claiming wheel game spin: ${error.errorMessage}${colors.reset}`);
+        }
+    }
+
+    let info = await infoWheelGame(axiosInstance);
+
+    while (info.data.spins > 0) {
+        try {
+            const spinResult = await spinWheelGame(axiosInstance);
+            console.log(
+                `${colors.magenta}Wheel game spin completed! Earned ${spinResult.data.type} = ${spinResult.data.quantity} ${colors.reset}`
+            );
+
+            await sleep(randomDelay() + 5000);
+
+            try {
+                await claimRewardWheelGame(axiosInstance);
+                console.log(`${colors.green}Wheel game reward claimed!${colors.reset}`);
+            } catch (error) {
+                console.log(`${colors.red}Error claiming wheel game reward: ${error.errorMessage}${colors.reset}`);
+            }
+
+            info = await infoWheelGame(axiosInstance);
+            console.log(`${colors.yellow}Wheel game spins remaining: ${info.data.spins}${colors.reset}`);
+        } catch (error) {
+            console.log(`${colors.red}Error spinning wheel game: ${error.errorMessage}${colors.reset}`);
+        }
+    }
+}
+
 let winCount = 0;
 
 async function playGameSession(axiosInstance) {
@@ -299,6 +355,8 @@ async function playGameSession(axiosInstance) {
     let totalLosses = 0;
 
     const checkinResult = await checkin(axiosInstance);
+
+    await processWheelGame(axiosInstance, checkinResult);
 
     if (checkinResult.data.firstLoginOfDay) {
         await claimStreak(axiosInstance);
