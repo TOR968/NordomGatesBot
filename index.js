@@ -167,7 +167,7 @@ async function startKnockGame(axiosInstance) {
 
 async function infoWheelGame(axiosInstance) {
     console.log(`${colors.green}Getting info for wheel game...${colors.reset}`);
-    return await makeRequest(axiosInstance, "/wheel", "GET");
+    return await makeRequest(axiosInstance, "/wheel");
 }
 
 async function claimFreeSpinWheelGame(axiosInstance) {
@@ -194,6 +194,11 @@ async function claimKnockGamePoints(axiosInstance) {
     );
 }
 
+async function getGameCenter(axiosInstance) {
+    console.log(`${colors.blue}Getting game center...${colors.reset}`);
+    return await makeRequest(axiosInstance, "/gamecenter");
+}
+
 function randomPoints() {
     const points = Math.floor(Math.random() * (config.maxPoints - config.minPoints + 1)) + config.minPoints;
     console.log(
@@ -204,7 +209,7 @@ function randomPoints() {
     return points;
 }
 
-async function processKnockGame(axiosInstance) {
+async function processKnockGame(axiosInstance, gameCenter) {
     await startKnockGame(axiosInstance);
     console.log(`${colors.yellow}Waiting 10 seconds...${colors.reset}`);
     await sleep(10 * 1000);
@@ -309,15 +314,9 @@ function setupPayload(task) {
     }
 }
 
-async function processWheelGame(axiosInstance, checkinResult) {
-    if (checkinResult.data.firstLoginOfDay) {
-        try {
-            await claimFreeSpinWheelGame(axiosInstance);
-            console.log(`${colors.green}Wheel game free spin claimed!${colors.reset}`);
-        } catch (error) {
-            console.log(`${colors.red}Error claiming wheel game spin: ${error.errorMessage}${colors.reset}`);
-        }
-    }
+async function processWheelGame(axiosInstance, gameCenter) {
+    await claimFreeSpinWheelGame(axiosInstance);
+    console.log(`${colors.green}Wheel game free spin claimed!${colors.reset}`);
 
     let info = await infoWheelGame(axiosInstance);
 
@@ -356,11 +355,11 @@ async function playGameSession(axiosInstance) {
 
     const checkinResult = await checkin(axiosInstance);
 
-    await processWheelGame(axiosInstance, checkinResult);
-
     if (checkinResult.data.firstLoginOfDay) {
         await claimStreak(axiosInstance);
         console.log(`${colors.green}Streak day ${checkinResult.data.dayStreak.dayStreak}!${colors.reset}`);
+        await processWheelGame(axiosInstance);
+        await processKnockGame(axiosInstance);
     }
 
     while (sessionActive) {
@@ -368,11 +367,6 @@ async function playGameSession(axiosInstance) {
         if (!dashboard || !dashboard.data) return;
 
         userName = dashboard.data.userName;
-
-        if (dashboard.data.knockGame.isAvailable) {
-            await processKnockGame(axiosInstance);
-            continue;
-        }
 
         if (dashboard.data.nordGateGame.levelToRisk != null) {
             await claimPoints(axiosInstance);
