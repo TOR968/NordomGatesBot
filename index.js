@@ -16,6 +16,7 @@ const config = {
     rewardInKeys: true, // false - get points, true - get keys in KnockGame
     minPoints: 159, // Minimum number of points to win in KnockGame (1-398)
     maxPoints: 400, // Maximum number of points to win in KnockGame (1-400)
+    codeForPuzzle: 0, // Code for puzzle game, needs to be updated daily or set the value to 0 to get a random code (10000 - 99999 or 0)
     processTasksEnabled: true, //Option to enable - true /disable - false task processing
     baseUrl: "https://nordomgate-back-gua0c3cgh0aneacq.z02.azurefd.net/api/v1",
     dataFile: "data.txt",
@@ -25,7 +26,7 @@ const config = {
         "Join us on Telegram",
         "Complete tasks in Earn section",
         "Join Whale TG Channel",
-        "Start farming in BlockBits",
+        "Add Nordom to your TG name",
     ], // List of tasks to skip, tasks that can only be performed manually
 };
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -194,6 +195,16 @@ async function claimKnockGamePoints(axiosInstance) {
     );
 }
 
+async function infoPuzzleGame(axiosInstance) {
+    console.log(`${colors.green}Getting info for puzzle...${colors.reset}`);
+    return await makeRequest(axiosInstance, "/puzzle");
+}
+
+async function solvePuzzleGame(axiosInstance, code) {
+    console.log(`${colors.green}Solving puzzle...${colors.reset}`);
+    return await makeRequest(axiosInstance, `/puzzle?code=${code}`, "POST");
+}
+
 async function getGameCenter(axiosInstance) {
     console.log(`${colors.blue}Getting game center...${colors.reset}`);
     return await makeRequest(axiosInstance, "/gamecenter");
@@ -210,6 +221,7 @@ function randomPoints() {
 }
 
 async function processKnockGame(axiosInstance, gameCenter) {
+    await getGameCenter(axiosInstance);
     await startKnockGame(axiosInstance);
     console.log(`${colors.yellow}Waiting 10 seconds...${colors.reset}`);
     await sleep(10 * 1000);
@@ -315,10 +327,15 @@ function setupPayload(task) {
 }
 
 async function processWheelGame(axiosInstance, gameCenter) {
-    await claimFreeSpinWheelGame(axiosInstance);
-    console.log(`${colors.green}Wheel game free spin claimed!${colors.reset}`);
+    await getGameCenter(axiosInstance);
+    sleep(randomDelay());
 
     let info = await infoWheelGame(axiosInstance);
+
+    if (info.data.timeLeft === 0) {
+        await claimFreeSpinWheelGame(axiosInstance);
+        console.log(`${colors.green}Wheel game free spin claimed!${colors.reset}`);
+    }
 
     while (info.data.spins > 0) {
         try {
@@ -344,6 +361,36 @@ async function processWheelGame(axiosInstance, gameCenter) {
     }
 }
 
+async function processPuzzleGame(axiosInstance) {
+    await getGameCenter(axiosInstance);
+    sleep(randomDelay());
+
+    const dataPuzzle = await infoPuzzleGame(axiosInstance);
+
+    if (!dataPuzzle && !dataPuzzle.data.timeLeft === 0) {
+        const puzzleResult = await solvePuzzleGame(axiosInstance, setCodeForPuzzle(config.codeForPuzzle));
+
+        puzzleResult.data.numbers.forEach((number) => {
+            console.log(
+                `${colors.magenta}Puzzle game number: ${number.number} | State: ${number.state}${colors.reset}`
+            );
+        });
+
+        console.log(`${colors.green}Puzzle game points claimed! ${puzzleResult.data.points} ${colors.reset}`);
+    }
+}
+
+function setCodeForPuzzle(code) {
+    if (code != 0) {
+        return code;
+    } else {
+        return random5DigitNumber();
+    }
+}
+function random5DigitNumber() {
+    return Math.floor(Math.random() * 90000) + 10000;
+}
+
 let winCount = 0;
 
 async function playGameSession(axiosInstance) {
@@ -358,9 +405,11 @@ async function playGameSession(axiosInstance) {
     if (checkinResult.data.firstLoginOfDay) {
         await claimStreak(axiosInstance);
         console.log(`${colors.green}Streak day ${checkinResult.data.dayStreak.dayStreak}!${colors.reset}`);
-        await processWheelGame(axiosInstance);
         await processKnockGame(axiosInstance);
     }
+
+    await processWheelGame(axiosInstance);
+    await processPuzzleGame(axiosInstance);
 
     while (sessionActive) {
         const dashboard = await getDashboard(axiosInstance);
