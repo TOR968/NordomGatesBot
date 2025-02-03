@@ -5,6 +5,7 @@
 | ✅  | Automates tasks (not telegram) |
 | ✅  | Playing games                  |
 | ✅  | Playing Wheel game             |
+| ✅  | Playing Puzzle game             |
 | ✅  | Handles multiple accounts      |
 | ✅  | Proxy support                  |
 | ✅  | Automatic task verification    |
