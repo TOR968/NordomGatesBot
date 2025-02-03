@@ -16,7 +16,7 @@ const config = {
     rewardInKeys: true, // false - get points, true - get keys in KnockGame
     minPoints: 159, // Minimum number of points to win in KnockGame (1-398)
     maxPoints: 400, // Maximum number of points to win in KnockGame (1-400)
-    codeForPuzzle: 0, // Code for puzzle game, needs to be updated daily or set the value to 0 to get a random code (10000 - 99999 or 0)
+    codeForPuzzle: true, // Code for puzzle game, needs to be updated daily or set the value to true to get a random code (00000 - 99999 or true)
     processTasksEnabled: true, //Option to enable - true /disable - false task processing
     baseUrl: "https://nordomgate-back-gua0c3cgh0aneacq.z02.azurefd.net/api/v1",
     dataFile: "data.txt",
@@ -381,7 +381,7 @@ async function processPuzzleGame(axiosInstance) {
 }
 
 function setCodeForPuzzle(code) {
-    if (code != 0) {
+    if (code != true) {
         return code;
     } else {
         return random5DigitNumber();
