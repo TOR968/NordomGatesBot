@@ -27,6 +27,8 @@ const config = {
         "Complete tasks in Earn section",
         "Join Whale TG Channel",
         "Add Nordom to your TG name",
+        "Join project’s CEO for BTS.",
+        "Play Boinkers",
     ], // List of tasks to skip, tasks that can only be performed manually
 };
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -339,6 +341,10 @@ async function processWheelGame(axiosInstance, gameCenter) {
 
     while (info.data.spins > 0) {
         try {
+            if (info.data.reward !== null) {
+                await claimRewardWheelGame(axiosInstance);
+            }
+
             const spinResult = await spinWheelGame(axiosInstance);
             console.log(
                 `${colors.magenta}Wheel game spin completed! Earned ${spinResult.data.type} = ${spinResult.data.quantity} ${colors.reset}`

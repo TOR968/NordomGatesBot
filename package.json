@@ -4,5 +4,8 @@
         "axios": "^1.7.7",
         "https-proxy-agent": "^7.0.5",
         "socks-proxy-agent": "^8.0.4"
+    },
+    "scripts": {
+        "start": "node index.js"
     }
 }
